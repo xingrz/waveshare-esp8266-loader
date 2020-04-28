@@ -7,6 +7,10 @@
 #include "html.h"       // HTML page of the tool
 #include "epd.h"        // e-Paper driver
 
+#define LED_PIN 16
+#define LED_ON  LOW
+#define LED_OFF HIGH
+
 //const char* ssid = "Waveshare";
 //const char* password = "password";
 const char* ssid = "TheHome";
@@ -70,6 +74,9 @@ void setup(void) {
 
   server.begin();
   Serial.println("HTTP server started");
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LED_OFF);
 }
 
 void loop(void) {
@@ -78,6 +85,8 @@ void loop(void) {
 
 void EPD_Init()
 {
+  digitalWrite(LED_PIN, LED_ON);
+
   EPD_dispIndex = ((int)server.arg(0)[0] - 'a') +  (((int)server.arg(0)[1] - 'a') << 4);
   // Print log message: initialization of e-Paper (e-Paper's type)
   Serial.printf("EPD %s\r\n", EPD_dispMass[EPD_dispIndex].title);
@@ -131,6 +140,8 @@ void EPD_Show()
   // Show results and Sleep
   EPD_dispMass[EPD_dispIndex].show();
   server.send(200, "text/plain", "Show ok\r\n");
+
+  digitalWrite(LED_PIN, LED_OFF);
 }
 
 void handleNotFound() {
