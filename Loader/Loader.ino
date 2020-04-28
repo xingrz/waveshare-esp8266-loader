@@ -2,6 +2,7 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+#include <Ticker.h>
 #include "scripts.h"    // JavaScript code
 #include "css.h"        // Cascading Style Sheets
 #include "html.h"       // HTML page of the tool
@@ -10,6 +11,9 @@
 #define LED_PIN 16
 #define LED_ON  LOW
 #define LED_OFF HIGH
+#define LED_INT_IDLE 50
+#define LED_INT_UPLOAD 5
+#define LED_INT_REFRESH 2
 
 //const char* ssid = "Waveshare";
 //const char* password = "password";
@@ -18,6 +22,22 @@ const char* password = "qq330447168";
 
 ESP8266WebServer server(80);
 IPAddress myIP;       // IP address in your local wifi net
+
+int led_int = 0;
+int led_counter = 0;
+Ticker blinker;
+
+void blinkLed() {
+  if (led_int != 0 && led_counter % led_int == 0) {
+    digitalWrite(LED_PIN, LED_ON);
+  } else {
+    digitalWrite(LED_PIN, LED_OFF);
+  }
+  led_counter++;
+  if (led_counter >= 1000) {
+    led_counter = 0;
+  }
+}
 
 void setup(void) {
 
@@ -76,7 +96,8 @@ void setup(void) {
   Serial.println("HTTP server started");
 
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LED_OFF);
+  led_int = LED_INT_IDLE;
+  blinker.attach(0.1, blinkLed);
 }
 
 void loop(void) {
@@ -85,7 +106,7 @@ void loop(void) {
 
 void EPD_Init()
 {
-  digitalWrite(LED_PIN, LED_ON);
+  led_int = LED_INT_UPLOAD;
 
   EPD_dispIndex = ((int)server.arg(0)[0] - 'a') +  (((int)server.arg(0)[1] - 'a') << 4);
   // Print log message: initialization of e-Paper (e-Paper's type)
@@ -136,12 +157,14 @@ void EPD_Next()
 
 void EPD_Show()
 {
+  led_int = LED_INT_REFRESH;
+
   Serial.println("SHOW");
   // Show results and Sleep
   EPD_dispMass[EPD_dispIndex].show();
   server.send(200, "text/plain", "Show ok\r\n");
 
-  digitalWrite(LED_PIN, LED_OFF);
+  led_int = LED_INT_IDLE;
 }
 
 void handleNotFound() {
